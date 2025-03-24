@@ -22,16 +22,19 @@ dec = np.array(results['dec'])
 
 phot_g_mean_flux = np.array(results['phot_g_mean_flux'])
 phot_g_mean_mag = np.array(results['phot_g_mean_mag'])
+# these are just the brightness, i need the start color "bp_rp" but many of the stars dont have those values :/
+# i guess i have to work only with the brightness :(
 
 # Create a 2D scatter plot using Plotly
-fig = go.Figure(data=[go.Scatter(
+fig = go.Figure(data=[go.Scattergl(
     x=ra,
     y=dec,
     mode='markers',
     marker=dict(
         size=1,
-        color='white',
-        opacity=0.6
+        color=phot_g_mean_mag,
+        colorscale='hot',
+        opacity=1
     ),
 )])
 
