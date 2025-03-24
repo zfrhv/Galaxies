@@ -3,7 +3,7 @@ from astropy.io import fits
 from astropy.table import Table
 
 # import results
-hdul = fits.open('andromeda_data.fits')
+hdul = fits.open('andromeda_cone_data.fits')
 data = hdul[1].data
 results = Table(data)
 hdul.close()
@@ -22,4 +22,9 @@ for column in results.columns:
 
 print('useful columns:')
 for column in useful_columns:
+  print(column, ":", results[column][0])
+
+print()
+print('bad columns:')
+for column in useless_columns:
   print(column, ":", results[column][0])

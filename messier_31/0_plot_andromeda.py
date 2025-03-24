@@ -23,19 +23,6 @@ dec = np.array(results['dec'])
 phot_g_mean_flux = np.array(results['phot_g_mean_flux'])
 phot_g_mean_mag = np.array(results['phot_g_mean_mag'])
 
-# astrometric_gof_al : 14.049725
-# astrometric_chi2_al : 348.53717
-# astrometric_excess_noise : 25.398783
-# astrometric_excess_noise_sig : 21.824903
-# astrometric_sigma5d_max : 948.63873
-# ipd_gof_harmonic_amplitude : 1.9720112
-# ipd_gof_harmonic_phase : 50.664013
-
-# # rotate to make it easier
-# theta = np.radians(-37)
-# ra = ra * np.cos(theta) - dec * np.sin(theta)
-# dec = ra * np.sin(theta) + dec * np.cos(theta)
-
 # Create a 2D scatter plot using Plotly
 fig = go.Figure(data=[go.Scatter(
     x=ra,
