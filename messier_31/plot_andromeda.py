@@ -3,11 +3,14 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 
-# import results
-hdul = fits.open('andromeda_data.fits')
-data = hdul[1].data
-results = Table(data)
-hdul.close()
+# # import fits results
+# hdul = fits.open('andromeda_cone_data.fits')
+# data = hdul[1].data
+# results = Table(data)
+# hdul.close()
+
+# import csv results
+results = Table.read('andromeda_square_data.csv', format='csv')
 
 # filter results
 results = results[results['ra_error'] > 0.1] # idk why this Gaia is so uncertain but smaller than 0.1 looks like noise
@@ -28,56 +31,40 @@ phot_g_mean_mag = np.array(results['phot_g_mean_mag'])
 # ipd_gof_harmonic_amplitude : 1.9720112
 # ipd_gof_harmonic_phase : 50.664013
 
-distance = 2.537 * 10**6 # light years
+# # rotate to make it easier
+# theta = np.radians(-37)
+# ra = ra * np.cos(theta) - dec * np.sin(theta)
+# dec = ra * np.sin(theta) + dec * np.cos(theta)
 
-# Convert spherical coordinates (RA, DEC, Distance) to Cartesian coordinates (x, y, z)
-ra_rad = np.radians(ra)
-dec_rad = np.radians(dec)
-x = distance * np.cos(dec_rad) * np.cos(ra_rad)
-y = distance * np.cos(dec_rad) * np.sin(ra_rad)
-z = distance * np.sin(dec_rad)
-
-# Create a 3D scatter plot using Plotly
-fig = go.Figure(data=[go.Scatter3d(
-    x=x,
-    y=y,
-    z=z,
+# Create a 2D scatter plot using Plotly
+fig = go.Figure(data=[go.Scatter(
+    x=ra,
+    y=dec,
     mode='markers',
     marker=dict(
         size=1,
         color='white',
-        colorscale='YlGnBu',
         opacity=0.6
     ),
 )])
 
 # Labels and title
 fig.update_layout(
-    title="3D Plot of Star Positions",
-    scene=dict(
-        xaxis_title='X [ly]',
-        yaxis_title='Y [ly]',
-        zaxis_title='Z [ly]',
-        bgcolor='black',
-        xaxis=dict(
-            showgrid=False,
-            zeroline=False,
-            showbackground=False,
-        ),
-        yaxis=dict(
-            showgrid=False,
-            zeroline=False,
-            showbackground=False,
-        ),
-        zaxis=dict(
-            showgrid=False,
-            zeroline=False,
-            showbackground=False,
-        ),
-    ),
+    title="2D Plot of Star Positions (RA vs DEC)",
+    xaxis_title='Right Ascension (RA) [degrees]',
+    yaxis_title='Declination (DEC) [degrees]',
     plot_bgcolor='black',
     paper_bgcolor='black',
     font=dict(color='white'),
+    xaxis=dict(
+        showgrid=False,
+        zeroline=False,
+        scaleanchor='y',
+    ),
+    yaxis=dict(
+        showgrid=False,
+        zeroline=False,
+    ),
 )
 
 # Show the plot
