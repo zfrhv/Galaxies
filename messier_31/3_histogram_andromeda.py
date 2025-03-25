@@ -6,20 +6,12 @@ from astropy.table import Table
 from astropy.table import vstack
 
 # import csv results
-results = Table.read('andromeda_square_data.csv', format='csv')
-
-# filter results
-results = results[results['ra_error'] > 0.1] # idk why this Gaia is so uncertain but smaller than 0.1 looks like noise
-results = results[results['dec_error'] > 0.1]
-results = results[~np.isnan(results['phot_g_mean_flux'])]
-results = results[~np.isnan(results['phot_g_mean_mag'])]
-results = results[~results['phot_g_mean_flux'].mask]
-results = results[~results['phot_g_mean_mag'].mask]
+results = Table.read('andromeda_square_noiseless.csv', format='csv')
 
 # sort stars for histograme
 results.sort('ra')
 
-screen_parts = 3
+screen_parts = 4
 histogram_parts = 100
 
 histogram_height = histogram_parts * screen_parts * 1/10000
@@ -73,8 +65,8 @@ for i in range(screen_parts):
 
             result['ra'] = start_x + offset_x
             result['dec'] = start_y + offset_y
-        # use the right bottom histogram for noise inspection
-        if i == screen_parts-1 and j == 0:
+        # use the left up histogram for noise inspection
+        if i == 0 and j == screen_parts-1:
             noise_histogram = histogram
 
 
@@ -129,10 +121,10 @@ fig.update_layout(
 # Show the plot
 fig.show()
 
-# used bottom right square size of 1/3 out of the screen (screen_parts = 3)
+# used bottom right square size of 1/4 out of the screen (screen_parts = 4)
 # it doesnt has any special stuff and only noise stars
-if screen_parts == 3:
-    noise_histogram = np.array(noise_histogram) * 9 # multiply by 3*3 cuz this histogram is only 1/9 of the screen
-    np.save('noise_histogram.npy', noise_histogram)
+if screen_parts == 4:
+    noise_histogram = np.array(noise_histogram) * 16 # multiply by 4*4 cuz this histogram is only 1/16 of the screen
+    np.save('noise_histogram_2.npy', noise_histogram)
 
 # TODO maybe use phot_g_mean_flux instead?
