@@ -11,6 +11,7 @@ from astropy.table import Table
 
 # import csv results
 results = Table.read('andromeda_square_data.csv', format='csv')
+# TODO ask file name instead of hardcoded
 
 # filter results
 results = results[results['ra_error'] > 0.1] # idk why this Gaia is so uncertain but smaller than 0.1 looks like noise
