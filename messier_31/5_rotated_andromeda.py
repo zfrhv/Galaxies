@@ -1,32 +1,38 @@
 import plotly.graph_objects as go
 import numpy as np
+import math
 from astropy.io import fits
 from astropy.table import Table
-import tkinter as tk
-from tkinter import filedialog
-
-# # import fits results
-# hdul = fits.open('andromeda_cone_data.fits')
-# data = hdul[1].data
-# results = Table(data)
-# hdul.close()
+from astropy.table import vstack
 
 # import csv results
-filename = filedialog.askopenfilename(filetypes=[("CSV files", ".csv")])
-results = Table.read(filename, format='csv')
+results = Table.read('andromeda_square_noiseless_2.csv', format='csv')
 
-# filter results
-results = results[results['ra_error'] > 0.1] # idk why this Gaia is so uncertain but smaller than 0.1 looks like noise
-results = results[results['dec_error'] > 0.1]
+# rotate the results
+degree = math.radians(-45)
+
+min_ra = np.min(results['ra'])
+max_ra = np.max(results['ra'])
+min_dec = np.min(results['dec'])
+max_dec = np.max(results['dec'])
+mid_ra = (max_ra + min_ra)/2
+mid_dec = (max_dec + min_dec)/2
+
+for result in results:
+    x = result['ra']
+    y = result['dec']
+    cos_theta = math.cos(degree)
+    sin_theta = math.sin(degree)
+    x_new = x * cos_theta - y * sin_theta
+    y_new = x * sin_theta + y * cos_theta
+    result['ra'] = x_new
+    result['dec'] = y_new
 
 # get useful data
 ra = np.array(results['ra'])
 dec = np.array(results['dec'])
-
 phot_g_mean_flux = np.array(results['phot_g_mean_flux'])
 phot_g_mean_mag = np.array(results['phot_g_mean_mag'])
-# these are just the brightness, i need the start color "bp_rp" but many of the stars dont have those values :/
-# i guess i have to work only with the brightness :(
 
 # Create a 2D scatter plot using Plotly
 fig = go.Figure(data=[go.Scattergl(
@@ -62,3 +68,6 @@ fig.update_layout(
 
 # Show the plot
 fig.show()
+
+# save the table
+results.write('andromeda_noiseless_rotated.csv', format='csv', overwrite=True)
