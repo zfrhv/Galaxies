@@ -96,6 +96,25 @@ fig.show()
 
 
 # plot the histograms
+def num_to_color(num):
+    if num < 0 or num > 1:
+        return "gold"
+
+    color_limit = 100  # from 0 to 255
+    color_offset = 155  # color_offset + color_limit <= 255
+
+    def to_hex(value):
+        hex_value = hex(value)[2:]  # Convert to hex and remove "0x"
+        return hex_value.zfill(2)  # Ensure two-digit format
+
+    rgb = [
+        math.floor(color_offset + color_limit / 2 * (math.sin((num      ) * 2 * math.pi) + 1)),
+        math.floor(color_offset + color_limit / 2 * (math.sin((num + 1/3) * 2 * math.pi) + 1)),
+        math.floor(color_offset + color_limit / 2 * (math.sin((num + 2/3) * 2 * math.pi) + 1))
+    ]
+
+    return "#" + "".join(to_hex(c) for c in rgb)
+
 # Convert histograms into x, y, z data
 x = []  # Histogram index
 y = []  # Bin index
@@ -115,8 +134,7 @@ fig = go.Figure(data=[go.Scatter3d(
     mode='markers',
     marker=dict(
         size=1,
-        color='white',
-        colorscale='YlGnBu',
+        color=[num_to_color(i/2 / len(histograms)) for i in x],
         opacity=0.6
     ),
 )])
@@ -208,3 +226,38 @@ fig.show()
 # i wait until they improve data to include colors, or filter out only the stars that do have color data.
 
 # TODO filter out the stars that only have their color (too lazy for now so i will leave this project until inspiration)
+
+
+
+# bp_rp
+# phot_g_mean_mag
+
+
+# ok so i have colors data, i can do average and there will be difference, but the graphs look so random that even with that differents it looks not relaiable
+# i think its bcz i randomly removed some of the noise, so now im also randomly left with some noise
+# conclusion: i cannot randomly remove stuff, instead i should make histogram of the noise, histogram of the galaxy, and subtract. keep the big data big, no random shinanigans.
+
+# also lets properly collect noise from both sides
+# i will start over
+
+# phot_g_n_obs
+# phot_g_mean_flux
+# phot_g_mean_flux_error
+# phot_g_mean_flux_over_error
+# phot_g_mean_mag
+# phot_bp_mean_flux
+# phot_bp_mean_flux_error
+# phot_bp_mean_flux_over_error
+# phot_bp_mean_mag
+# phot_rp_mean_flux
+# phot_rp_mean_flux_error
+# phot_rp_mean_flux_over_error
+# phot_rp_mean_mag
+# phot_bp_rp_excess_factor
+# bp_rp
+# bp_g
+# g_rp
+
+
+# results = results[~np.isnan(results['bp_rp'])]
+# results = results[~results['bp_rp'].mask]

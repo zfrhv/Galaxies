@@ -15,7 +15,7 @@ for column in results.columns:
     nan_count = np.sum(np.isnan(results[column]))
   else:
     nan_count = 0
-  if nan_count > len(results) * 0.01:
+  if nan_count > len(results) * 0.1: # more than 10%
     useless_columns.append(column)
   else:
     useful_columns.append(column)
