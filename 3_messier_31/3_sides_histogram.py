@@ -67,16 +67,8 @@ for i in range(screen_parts):
         section_g_rp = math.floor(g_rp_ratio * histogram_parts)
         histogram_g_rp[section_g_rp] += 1
 
-    sum_stars_bp_rp = np.sum(histogram_bp_rp)
-    histogram_bp_rp = histogram_bp_rp / sum_stars_bp_rp
     histograms_bp_rp.append(histogram_bp_rp)
-
-    sum_stars_bp_g = np.sum(histogram_bp_g)
-    histogram_bp_g = histogram_bp_g / sum_stars_bp_g
     histograms_bp_g.append(histogram_bp_g)
-
-    sum_stars_g_rp = np.sum(histogram_g_rp)
-    histogram_g_rp = histogram_g_rp / sum_stars_g_rp
     histograms_g_rp.append(histogram_g_rp)
 
 
@@ -100,7 +92,11 @@ for i in range(screen_parts):
     histograms_g_rp[i] = histograms_g_rp[i] - noise_histogram_g_rp
 
 
-
+# straight the amount of stars for statistical color
+for i in range(screen_parts):
+    histograms_bp_rp[i] = histograms_bp_rp[i] / np.sum(histograms_bp_rp[i])
+    histograms_bp_g[i] = histograms_bp_g[i] / np.sum(histograms_bp_g[i])
+    histograms_g_rp[i] = histograms_g_rp[i] / np.sum(histograms_g_rp[i])
 
 
 
@@ -392,7 +388,4 @@ fig.show()
 
 
 
-# ah nvm they are also too close
-# and the left vs right parts also keep switching values so i dont think its relayable
-# i dont think i can do anything with this data, there is no color difference between left and right sides
-# so i cant tells any speed differences between left and right
+# not sure if i cant conclude anything, seems not stable enough

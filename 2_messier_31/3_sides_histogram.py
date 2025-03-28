@@ -67,16 +67,8 @@ for i in range(screen_parts):
         section_rp = math.floor(phot_rp_ratio * histogram_parts)
         histogram_rp[section_rp] += 1
 
-    sum_stars_g = np.sum(histogram_g)
-    histogram_g = histogram_g / sum_stars_g
     histograms_g.append(histogram_g)
-
-    sum_stars_bp = np.sum(histogram_bp)
-    histogram_bp = histogram_bp / sum_stars_bp
     histograms_bp.append(histogram_bp)
-
-    sum_stars_rp = np.sum(histogram_rp)
-    histogram_rp = histogram_rp / sum_stars_rp
     histograms_rp.append(histogram_rp)
 
 
@@ -99,7 +91,11 @@ for i in range(screen_parts):
     histograms_bp[i] = histograms_bp[i] - noise_histogram_bp
     histograms_rp[i] = histograms_rp[i] - noise_histogram_rp
 
-
+# straight the amount of stars for statistical color
+for i in range(screen_parts):
+    histograms_g[i] = histograms_g[i] / np.sum(histograms_g[i])
+    histograms_bp[i] = histograms_bp[i] / np.sum(histograms_bp[i])
+    histograms_rp[i] = histograms_rp[i] / np.sum(histograms_rp[i])
 
 
 
@@ -392,8 +388,8 @@ fig.show()
 
 
 
-# on 3rd display it looks like there's no difference, but there is veryyy small difference
-# i think i need to calc difference per star, and then display that.
-# cuz displaying sum is too tiny to see, the shift is too gentle.
-# so i need to use bp_rp, bp_g, g_rp
+# looks useful!
+# i will still check bp_rp, bp_g, g_rp in next folder
 # starting over...
+
+# although there are negative values, so maybe the "noise" stars are not really noise
