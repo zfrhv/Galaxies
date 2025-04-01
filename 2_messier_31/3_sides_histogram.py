@@ -97,6 +97,73 @@ for i in range(screen_parts):
     histograms_g_rp[i] = histograms_g_rp[i] / np.sum(histograms_g_rp[i])
 
 
+# seperate histograms into left, avg, right
+hist_parts = math.floor(screen_parts/2)
+left_hist_bp_rp = histograms_bp_rp[:hist_parts]
+right_hist_bp_rp = histograms_bp_rp[hist_parts:]
+avg_hist_bp_rp = [(h1 + h2) / 2 for h1, h2 in zip(left_hist_bp_rp, right_hist_bp_rp)]
+
+left_hist_bp_g = histograms_bp_g[:hist_parts]
+right_hist_bp_g = histograms_bp_g[hist_parts:]
+avg_hist_bp_g = [(h1 + h2) / 2 for h1, h2 in zip(left_hist_bp_g, right_hist_bp_g)]
+
+left_hist_g_rp = histograms_g_rp[:hist_parts]
+right_hist_g_rp = histograms_g_rp[hist_parts:]
+avg_hist_g_rp = [(h1 + h2) / 2 for h1, h2 in zip(left_hist_g_rp, right_hist_g_rp)]
+
+# smooth each histogram
+def smooth_histogram(hist):
+    # take point befor and point after, not avg but also check the speeds in range..
+    # dont forget that when i modify value the next itteration will use it as anchor
+    print()
+
+for hist in left_hist_bp_rp:
+    smooth_histogram(hist)
+for hist in right_hist_bp_rp:
+    smooth_histogram(hist)
+for hist in avg_hist_bp_rp:
+    smooth_histogram(hist)
+
+for hist in left_hist_bp_g:
+    smooth_histogram(hist)
+for hist in right_hist_bp_g:
+    smooth_histogram(hist)
+for hist in avg_hist_bp_g:
+    smooth_histogram(hist)
+
+for hist in left_hist_g_rp:
+    smooth_histogram(hist)
+for hist in right_hist_g_rp:
+    smooth_histogram(hist)
+for hist in avg_hist_g_rp:
+    smooth_histogram(hist)
+
+# smooth between the histograms
+def smooth_between(hists):
+    print()
+
+smooth_between(left_hist_bp_rp)
+smooth_between(right_hist_bp_rp)
+smooth_between(avg_hist_bp_rp)
+
+smooth_between(left_hist_bp_g)
+smooth_between(right_hist_bp_g)
+smooth_between(avg_hist_bp_g)
+
+smooth_between(left_hist_g_rp)
+smooth_between(right_hist_g_rp)
+smooth_between(avg_hist_g_rp)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -193,17 +260,17 @@ g_rp_x = []
 g_rp_y = []
 g_rp_z = []
 
-for hist_index, hist in enumerate(histograms_bp_rp):
+for hist_index, hist in enumerate(left_hist_bp_rp):
     for bin_index, count in enumerate(hist):
         bp_rp_x.append(hist_index)  # Histogram number
         bp_rp_y.append(bin_index)   # Bin index in histogram
         bp_rp_z.append(count)       # Bin value (height)
-for hist_index, hist in enumerate(histograms_bp_g):
+for hist_index, hist in enumerate(left_hist_bp_g):
     for bin_index, count in enumerate(hist):
         bp_g_x.append(hist_index)
         bp_g_y.append(bin_index)
         bp_g_z.append(count)
-for hist_index, hist in enumerate(histograms_g_rp):
+for hist_index, hist in enumerate(left_hist_g_rp):
     for bin_index, count in enumerate(hist):
         g_rp_x.append(hist_index)
         g_rp_y.append(bin_index)
@@ -306,18 +373,18 @@ fig.show()
 # Create a 2D scatter plot using Plotly
 fig = go.Figure()
 
-histogram1 = histograms_bp_rp[interesting_part]
-histogram2 = histograms_bp_rp[len(histograms_bp_rp)-1 - interesting_part]
-avg_hist = (histogram1 + histogram2) / 2
-histogram1 = histogram1 - avg_hist
-histogram2 = histogram2 - avg_hist
-bins = np.arange(len(histogram1))
+left_hist = left_hist_bp_rp[interesting_part]
+right_hist = right_hist_bp_rp[interesting_part]
+avg_hist = avg_hist_bp_rp[interesting_part]
+left_hist = left_hist - avg_hist
+right_hist = right_hist - avg_hist
+bins = np.arange(len(left_hist))
 
-print('speed by bp_rp: ', sum(val * i for i, val in enumerate(histogram2)) / 6.499625227109498)
+print('speed by bp_rp: ', sum(val * i for i, val in enumerate(right_hist)) / 6.499625227109498)
 
 fig.add_trace(go.Scattergl(
     x=bins,
-    y=histogram1,
+    y=left_hist,
     mode='lines+markers',
     marker=dict(size=1, color='green'),
     name="bp_rp left"
@@ -325,24 +392,24 @@ fig.add_trace(go.Scattergl(
 
 fig.add_trace(go.Scattergl(
     x=bins,
-    y=histogram2,
+    y=right_hist,
     mode='lines+markers',
     marker=dict(size=1, color='lightgreen'),
     name="bp_rp right"
 ))
 
-histogram1 = histograms_bp_g[interesting_part]
-histogram2 = histograms_bp_g[len(histograms_bp_g)-1 - interesting_part]
-avg_hist = (histogram1 + histogram2) / 2
-histogram1 = histogram1 - avg_hist
-histogram2 = histogram2 - avg_hist
-bins = np.arange(len(histogram1))
+left_hist = left_hist_bp_g[interesting_part]
+right_hist = right_hist_bp_g[interesting_part]
+avg_hist = avg_hist_bp_g[interesting_part]
+left_hist = left_hist - avg_hist
+right_hist = right_hist - avg_hist
+bins = np.arange(len(left_hist))
 
-print('speed by bp_g: ', sum(val * i for i, val in enumerate(histogram2)) / 2.3683722618236382)
+print('speed by bp_g: ', sum(val * i for i, val in enumerate(right_hist)) / 2.3683722618236382)
 
 fig.add_trace(go.Scattergl(
     x=bins,
-    y=histogram1,
+    y=left_hist,
     mode='lines+markers',
     marker=dict(size=1, color='blue'),
     name="bp_g left"
@@ -350,24 +417,24 @@ fig.add_trace(go.Scattergl(
 
 fig.add_trace(go.Scattergl(
     x=bins,
-    y=histogram2,
+    y=right_hist,
     mode='lines+markers',
     marker=dict(size=1, color='lightblue'),
     name="bp_g right"
 ))
 
-histogram1 = histograms_g_rp[interesting_part]
-histogram2 = histograms_g_rp[len(histograms_g_rp)-1 - interesting_part]
-avg_hist = (histogram1 + histogram2) / 2
-histogram1 = histogram1 - avg_hist
-histogram2 = histogram2 - avg_hist
-bins = np.arange(len(histogram1))
+left_hist = left_hist_g_rp[interesting_part]
+right_hist = right_hist_g_rp[interesting_part]
+avg_hist = avg_hist_g_rp[interesting_part]
+left_hist = left_hist - avg_hist
+right_hist = right_hist - avg_hist
+bins = np.arange(len(left_hist))
 
-print('speed by g_rp: ', sum(val * i for i, val in enumerate(histogram2)) / 4.13610394421988)
+print('speed by g_rp: ', sum(val * i for i, val in enumerate(right_hist)) / 4.13610394421988)
 
 fig.add_trace(go.Scattergl(
     x=bins,
-    y=histogram1,
+    y=left_hist,
     mode='lines+markers',
     marker=dict(size=1, color='red'),
     name="g_rp left"
@@ -375,7 +442,7 @@ fig.add_trace(go.Scattergl(
 
 fig.add_trace(go.Scattergl(
     x=bins,
-    y=histogram2,
+    y=right_hist,
     mode='lines+markers',
     marker=dict(size=1, color='pink'),
     name="g_rp right"
@@ -406,7 +473,6 @@ fig.show()
 
 
 # TODO
-# make avg histograms between each left+right
 # make smooth_histogram() and smooth all histograms
 # smooth between the left histograms same for avg and right
 # do left-avg vs right-avg and see the speeds
