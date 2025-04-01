@@ -11,20 +11,22 @@ results = Table.read('andromeda_rotated.csv', format='csv')
 # prepare stars for histograme
 threshhold = 0.1
 screen_parts = 20
-histogram_parts = 100
-interesting_part = 1/4 # ratio of ra at which i want to compare the brightness of the stars with the opposite side
+histogram_parts = 1000
+interesting_part = 3 # which part from left to compare with with its mirror part on right indexes are 0-19
 
 min_dec = np.min(results['dec'])
 max_dec = np.max(results['dec'])
 mid_dec = (max_dec + min_dec) / 2
 
+original_results = results
 results = results[(results['dec'] > mid_dec - threshhold) & (results['dec'] < mid_dec + threshhold)]
 
 results.sort('ra')
 
 # split X axis (ra) into screen_parts
-min_ra = np.min(results['ra'])
-max_ra = np.max(results['ra']) + 0.000001
+padding = threshhold + 0.01 # bcz picture rotated by 45.5 degress
+min_ra = np.min(results['ra']) + padding
+max_ra = np.max(results['ra']) - padding + 0.000001
 bins_x = np.linspace(min_ra, max_ra, screen_parts+1)
 
 split_results = []
@@ -34,74 +36,65 @@ for i in range(screen_parts):
     split_results.append(subset)
 
 # create histogram inside each bin
-histograms_g = []
-histograms_bp = []
-histograms_rp = []
-min_phot_g = np.min(results['phot_g_mean_mag'])
-max_phot_g = np.max(results['phot_g_mean_mag']) + 0.000001
-min_phot_bp = np.min(results['phot_bp_mean_mag'])
-max_phot_bp = np.max(results['phot_bp_mean_mag']) + 0.000001
-min_phot_rp = np.min(results['phot_rp_mean_mag'])
-max_phot_rp = np.max(results['phot_rp_mean_mag']) + 0.000001
+histograms_bp_rp = []
+histograms_bp_g = []
+histograms_g_rp = []
+min_bp_rp = np.min(results['bp_rp'])
+max_bp_rp = np.max(results['bp_rp']) + 0.000001
+min_bp_g = np.min(results['bp_g'])
+max_bp_g = np.max(results['bp_g']) + 0.000001
+min_g_rp = np.min(results['g_rp'])
+max_g_rp = np.max(results['g_rp']) + 0.000001
 for i in range(screen_parts):
     table = split_results[i]
     start_x = bins_x[i]
     end_x = bins_x[i+1]
 
-    histogram_g = np.zeros(histogram_parts+1, dtype=int)
-    histogram_bp = np.zeros(histogram_parts+1, dtype=int)
-    histogram_rp = np.zeros(histogram_parts+1, dtype=int)
+    histogram_bp_rp = np.zeros(histogram_parts+1, dtype=int)
+    histogram_bp_g = np.zeros(histogram_parts+1, dtype=int)
+    histogram_g_rp = np.zeros(histogram_parts+1, dtype=int)
     for result in table:
-        phot_g = result['phot_g_mean_mag']
-        phot_g_ratio = (phot_g - min_phot_g) / (max_phot_g - min_phot_g)
-        section_g = math.floor(phot_g_ratio * histogram_parts)
-        histogram_g[section_g] += 1
+        bp_rp = result['bp_rp']
+        bp_rp_ratio = (bp_rp - min_bp_rp) / (max_bp_rp - min_bp_rp)
+        section = math.floor(bp_rp_ratio * histogram_parts)
+        histogram_bp_rp[section] += 1
 
-        phot_bp = result['phot_bp_mean_mag']
-        phot_bp_ratio = (phot_bp - min_phot_bp) / (max_phot_bp - min_phot_bp)
-        section_bp = math.floor(phot_bp_ratio * histogram_parts)
-        histogram_bp[section_bp] += 1
+        bp_g = result['bp_g']
+        bp_g_ratio = (bp_g - min_bp_g) / (max_bp_g - min_bp_g)
+        section = math.floor(bp_g_ratio * histogram_parts)
+        histogram_bp_g[section] += 1
 
-        phot_rp = result['phot_rp_mean_mag']
-        phot_rp_ratio = (phot_rp - min_phot_rp) / (max_phot_rp - min_phot_rp)
-        section_rp = math.floor(phot_rp_ratio * histogram_parts)
-        histogram_rp[section_rp] += 1
+        g_rp = result['g_rp']
+        g_rp_ratio = (g_rp - min_g_rp) / (max_g_rp - min_g_rp)
+        section = math.floor(g_rp_ratio * histogram_parts)
+        histogram_g_rp[section] += 1
 
-    histograms_g.append(histogram_g)
-    histograms_bp.append(histogram_bp)
-    histograms_rp.append(histogram_rp)
+    histograms_bp_rp.append(histogram_bp_rp)
+    histograms_bp_g.append(histogram_bp_g)
+    histograms_g_rp.append(histogram_g_rp)
 
 
 # remove the noise
-noise_histogram_g_right_down = np.load('noise_histograms/noise_histogram_g_right_down.npy')
-noise_histogram_bp_right_down = np.load('noise_histograms/noise_histogram_bp_right_down.npy')
-noise_histogram_rp_right_down = np.load('noise_histograms/noise_histogram_rp_right_down.npy')
-noise_histogram_g_left_up = np.load('noise_histograms/noise_histogram_g_left_up.npy')
-noise_histogram_bp_left_up = np.load('noise_histograms/noise_histogram_bp_left_up.npy')
-noise_histogram_rp_left_up = np.load('noise_histograms/noise_histogram_rp_left_up.npy')
+noise_histogram_bp_rp_left_up = np.load('noise_histograms/noise_histogram_bp_rp_left_up.npy')
+noise_histogram_bp_g_left_up = np.load('noise_histograms/noise_histogram_bp_g_left_up.npy')
+noise_histogram_g_rp_left_up = np.load('noise_histograms/noise_histogram_g_rp_left_up.npy')
 
 # noise per area
 area = (max_ra - min_ra)/screen_parts * (threshhold*2)
-noise_histogram_g = (noise_histogram_g_right_down + noise_histogram_g_left_up) / 2 * area
-noise_histogram_bp = (noise_histogram_bp_right_down + noise_histogram_bp_left_up) / 2 * area
-noise_histogram_rp = (noise_histogram_rp_right_down + noise_histogram_rp_left_up) / 2 * area
+noise_histogram_bp_rp = noise_histogram_bp_rp_left_up * area
+noise_histogram_bp_g = noise_histogram_bp_g_left_up * area
+noise_histogram_g_rp = noise_histogram_g_rp_left_up * area
 
 for i in range(screen_parts):
-    histograms_g[i] = histograms_g[i] - noise_histogram_g
-    histograms_bp[i] = histograms_bp[i] - noise_histogram_bp
-    histograms_rp[i] = histograms_rp[i] - noise_histogram_rp
+    histograms_bp_rp[i] = histograms_bp_rp[i] - noise_histogram_bp_rp
+    histograms_bp_g[i] = histograms_bp_g[i] - noise_histogram_bp_g
+    histograms_g_rp[i] = histograms_g_rp[i] - noise_histogram_g_rp
 
-# straight the amount of stars for statistical color
+# straight the amount of stars, to get avg colors per 1 star
 for i in range(screen_parts):
-    histograms_g[i] = histograms_g[i] / np.sum(histograms_g[i])
-    histograms_bp[i] = histograms_bp[i] / np.sum(histograms_bp[i])
-    histograms_rp[i] = histograms_rp[i] / np.sum(histograms_rp[i])
-
-
-
-
-
-
+    histograms_bp_rp[i] = histograms_bp_rp[i] / np.sum(histograms_bp_rp[i])
+    histograms_bp_g[i] = histograms_bp_g[i] / np.sum(histograms_bp_g[i])
+    histograms_g_rp[i] = histograms_g_rp[i] / np.sum(histograms_g_rp[i])
 
 
 
@@ -111,21 +104,39 @@ for i in range(screen_parts):
 
 
 # get useful data
-ra = np.array(results['ra'])
-dec = np.array(results['dec'])
+ra = np.array(original_results['ra'])
+dec = np.array(original_results['dec'])
+bp_rp = np.array(original_results['bp_rp'])
 
 # Create a 2D scatter plot using Plotly
-fig = go.Figure(data=[go.Scattergl(
+fig = go.Figure()
+
+fig.add_trace(go.Scattergl(
     x=ra,
     y=dec,
     mode='markers',
     marker=dict(
         size=1,
-        color='white',
+        color=bp_rp,
         colorscale='hot',
         opacity=1
     ),
-)])
+))
+
+# Add borders
+borders_x = [min_ra, max_ra, max_ra, min_ra, min_ra]
+borders_y = [mid_dec + threshhold, mid_dec + threshhold, mid_dec - threshhold, mid_dec - threshhold, mid_dec + threshhold]
+for i in range(1, screen_parts):
+    new_x = (max_ra - min_ra)/screen_parts * i + min_ra
+    borders_x.extend([new_x, new_x, new_x])
+    borders_y.extend([mid_dec + threshhold, mid_dec - threshhold, mid_dec + threshhold])
+fig.add_trace(go.Scattergl(
+    x=borders_x,
+    y=borders_y,
+    mode='lines',
+    line=dict(color='white', width=1),
+    name="Square"
+))
 
 # Labels and title
 fig.update_layout(
@@ -172,39 +183,39 @@ fig.show()
 
 # plot the histograms
 # Convert histograms into x, y, z data
-phot_g_x = []  # Histogram index
-phot_g_y = []  # Bin index
-phot_g_z = []  # Bin values (heights)
-phot_bp_x = []
-phot_bp_y = []
-phot_bp_z = []
-phot_rp_x = []
-phot_rp_y = []
-phot_rp_z = []
+bp_rp_x = []  # Histogram index
+bp_rp_y = []  # Bin index
+bp_rp_z = []  # Bin values (heights)
+bp_g_x = []
+bp_g_y = []
+bp_g_z = []
+g_rp_x = []
+g_rp_y = []
+g_rp_z = []
 
-for hist_index, hist in enumerate(histograms_g):
+for hist_index, hist in enumerate(histograms_bp_rp):
     for bin_index, count in enumerate(hist):
-        phot_g_x.append(hist_index)  # Histogram number
-        phot_g_y.append(bin_index)   # Bin index in histogram
-        phot_g_z.append(count)       # Bin value (height)
-for hist_index, hist in enumerate(histograms_bp):
+        bp_rp_x.append(hist_index)  # Histogram number
+        bp_rp_y.append(bin_index)   # Bin index in histogram
+        bp_rp_z.append(count)       # Bin value (height)
+for hist_index, hist in enumerate(histograms_bp_g):
     for bin_index, count in enumerate(hist):
-        phot_bp_x.append(hist_index)
-        phot_bp_y.append(bin_index)
-        phot_bp_z.append(count)
-for hist_index, hist in enumerate(histograms_rp):
+        bp_g_x.append(hist_index)
+        bp_g_y.append(bin_index)
+        bp_g_z.append(count)
+for hist_index, hist in enumerate(histograms_g_rp):
     for bin_index, count in enumerate(hist):
-        phot_rp_x.append(hist_index)
-        phot_rp_y.append(bin_index)
-        phot_rp_z.append(count)
+        g_rp_x.append(hist_index)
+        g_rp_y.append(bin_index)
+        g_rp_z.append(count)
 
 # Create a 3D scatter plot using Plotly
 fig = go.Figure()
 
 fig.add_trace(go.Scatter3d(
-    x=phot_g_x,
-    y=phot_g_y,
-    z=phot_g_z,
+    x=bp_rp_x,
+    y=bp_rp_y,
+    z=bp_rp_z,
     mode='markers',
     marker=dict(
         size=1,
@@ -213,9 +224,9 @@ fig.add_trace(go.Scatter3d(
     ),
 ))
 fig.add_trace(go.Scatter3d(
-    x=phot_bp_x,
-    y=phot_bp_y,
-    z=phot_bp_z,
+    x=bp_g_x,
+    y=bp_g_y,
+    z=bp_g_z,
     mode='markers',
     marker=dict(
         size=1,
@@ -224,9 +235,9 @@ fig.add_trace(go.Scatter3d(
     ),
 ))
 fig.add_trace(go.Scatter3d(
-    x=phot_rp_x,
-    y=phot_rp_y,
-    z=phot_rp_z,
+    x=g_rp_x,
+    y=g_rp_y,
+    z=g_rp_z,
     mode='markers',
     marker=dict(
         size=1,
@@ -295,73 +306,79 @@ fig.show()
 # Create a 2D scatter plot using Plotly
 fig = go.Figure()
 
-histogram_num = math.floor(len(histograms_g) * interesting_part)
-histogram1_g = histograms_g[histogram_num]
-histogram2_g = histograms_g[len(histograms_g)-1 - histogram_num]
-bins = np.arange(len(histogram1_g))
+histogram1 = histograms_bp_rp[interesting_part]
+histogram2 = histograms_bp_rp[len(histograms_bp_rp)-1 - interesting_part]
+avg_hist = (histogram1 + histogram2) / 2
+histogram1 = histogram1 - avg_hist
+histogram2 = histogram2 - avg_hist
+bins = np.arange(len(histogram1))
+
+print('speed by bp_rp: ', sum(val * i for i, val in enumerate(histogram2)) / 6.499625227109498)
 
 fig.add_trace(go.Scattergl(
     x=bins,
-    y=histogram1_g,
+    y=histogram1,
     mode='lines+markers',
-    marker=dict(size=4, color='red'),
-    line=dict(color='green', width=2),
-    name="green left"
+    marker=dict(size=1, color='green'),
+    name="bp_rp left"
 ))
 
 fig.add_trace(go.Scattergl(
     x=bins,
-    y=histogram2_g,
+    y=histogram2,
     mode='lines+markers',
-    marker=dict(size=4, color='lightblue'),
-    line=dict(color='green', width=2),
-    name="green right"
+    marker=dict(size=1, color='lightgreen'),
+    name="bp_rp right"
 ))
 
-histogram_num = math.floor(len(histograms_bp) * interesting_part)
-histogram1_bp = histograms_bp[histogram_num]
-histogram2_bp = histograms_bp[len(histograms_bp)-1 - histogram_num]
-bins = np.arange(len(histogram1_bp))
+histogram1 = histograms_bp_g[interesting_part]
+histogram2 = histograms_bp_g[len(histograms_bp_g)-1 - interesting_part]
+avg_hist = (histogram1 + histogram2) / 2
+histogram1 = histogram1 - avg_hist
+histogram2 = histogram2 - avg_hist
+bins = np.arange(len(histogram1))
+
+print('speed by bp_g: ', sum(val * i for i, val in enumerate(histogram2)) / 2.3683722618236382)
 
 fig.add_trace(go.Scattergl(
     x=bins,
-    y=histogram1_bp,
+    y=histogram1,
     mode='lines+markers',
-    marker=dict(size=4, color='red'),
-    line=dict(color='lightblue', width=2),
-    name="blue left"
-))
-
-fig.add_trace(go.Scattergl(
-    x=bins,
-    y=histogram2_bp,
-    mode='lines+markers',
-    marker=dict(size=4, color='green'),
-    line=dict(color='lightblue', width=2),
-    name="blue right"
-))
-
-histogram_num = math.floor(len(histograms_rp) * interesting_part)
-histogram1_rp = histograms_rp[histogram_num]
-histogram2_rp = histograms_rp[len(histograms_rp)-1 - histogram_num]
-bins = np.arange(len(histogram1_rp))
-
-fig.add_trace(go.Scattergl(
-    x=bins,
-    y=histogram1_rp,
-    mode='lines+markers',
-    marker=dict(size=4, color='green'),
-    line=dict(color='red', width=2),
-    name="red left"
+    marker=dict(size=1, color='blue'),
+    name="bp_g left"
 ))
 
 fig.add_trace(go.Scattergl(
     x=bins,
-    y=histogram2_rp,
+    y=histogram2,
     mode='lines+markers',
-    marker=dict(size=4, color='lightblue'),
-    line=dict(color='red', width=2),
-    name="red right"
+    marker=dict(size=1, color='lightblue'),
+    name="bp_g right"
+))
+
+histogram1 = histograms_g_rp[interesting_part]
+histogram2 = histograms_g_rp[len(histograms_g_rp)-1 - interesting_part]
+avg_hist = (histogram1 + histogram2) / 2
+histogram1 = histogram1 - avg_hist
+histogram2 = histogram2 - avg_hist
+bins = np.arange(len(histogram1))
+
+print('speed by g_rp: ', sum(val * i for i, val in enumerate(histogram2)) / 4.13610394421988)
+
+fig.add_trace(go.Scattergl(
+    x=bins,
+    y=histogram1,
+    mode='lines+markers',
+    marker=dict(size=1, color='red'),
+    name="g_rp left"
+))
+
+fig.add_trace(go.Scattergl(
+    x=bins,
+    y=histogram2,
+    mode='lines+markers',
+    marker=dict(size=1, color='pink'),
+    name="g_rp right"
 ))
 
 
@@ -388,8 +405,8 @@ fig.show()
 
 
 
-# looks useful!
-# i will still check bp_rp, bp_g, g_rp in next folder
-# starting over...
-
-# although there are negative values, so maybe the "noise" stars are not really noise
+# TODO
+# make avg histograms between each left+right
+# make smooth_histogram() and smooth all histograms
+# smooth between the left histograms same for avg and right
+# do left-avg vs right-avg and see the speeds

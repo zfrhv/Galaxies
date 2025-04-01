@@ -11,15 +11,15 @@ results = Table.read('andromeda_square_data.csv', format='csv')
 # filter results
 results = results[results['ra_error'] > 0.1] # idk why this Gaia is so uncertain but smaller than 0.1 looks like noise
 results = results[results['dec_error'] > 0.1]
-results = results[~np.isnan(results['phot_g_mean_mag'])]
-results = results[~results['phot_g_mean_mag'].mask]
-results = results[~np.isnan(results['phot_bp_mean_mag'])]
-results = results[~results['phot_bp_mean_mag'].mask]
-results = results[~np.isnan(results['phot_rp_mean_mag'])]
-results = results[~results['phot_rp_mean_mag'].mask]
+results = results[~np.isnan(results['bp_rp'])]
+results = results[~results['bp_rp'].mask]
+results = results[~np.isnan(results['bp_g'])]
+results = results[~results['bp_g'].mask]
+results = results[~np.isnan(results['g_rp'])]
+results = results[~results['g_rp'].mask]
 
 # rotate the results
-degree = math.radians(-45)
+degree = math.radians(-45.5)
 
 min_ra = np.min(results['ra'])
 max_ra = np.max(results['ra'])
@@ -41,8 +41,7 @@ for result in results:
 # get useful data
 ra = np.array(results['ra'])
 dec = np.array(results['dec'])
-phot_g_mean_flux = np.array(results['phot_g_mean_flux'])
-phot_g_mean_mag = np.array(results['phot_g_mean_mag'])
+bp_rp = np.array(results['bp_rp'])
 
 # Create a 2D scatter plot using Plotly
 fig = go.Figure(data=[go.Scattergl(
@@ -51,7 +50,7 @@ fig = go.Figure(data=[go.Scattergl(
     mode='markers',
     marker=dict(
         size=1,
-        color=phot_g_mean_mag,
+        color=bp_rp,
         colorscale='hot',
         opacity=1
     ),

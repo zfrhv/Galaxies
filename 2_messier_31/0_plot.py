@@ -12,28 +12,16 @@ results = Table.read(filename, format='csv')
 # filter results
 results = results[results['ra_error'] > 0.1] # idk why this Gaia is so uncertain but smaller than 0.1 looks like noise
 results = results[results['dec_error'] > 0.1]
-results = results[~np.isnan(results['phot_g_mean_flux'])]
-results = results[~results['phot_g_mean_flux'].mask]
-results = results[~np.isnan(results['phot_bp_mean_flux'])]
-results = results[~results['phot_bp_mean_flux'].mask]
-results = results[~np.isnan(results['phot_rp_mean_flux'])]
-results = results[~results['phot_rp_mean_flux'].mask]
-results = results[~np.isnan(results['phot_g_mean_flux_error'])]
-results = results[~results['phot_g_mean_flux_error'].mask]
-results = results[~np.isnan(results['phot_bp_mean_flux_error'])]
-results = results[~results['phot_bp_mean_flux_error'].mask]
-results = results[~np.isnan(results['phot_rp_mean_flux_error'])]
-results = results[~results['phot_rp_mean_flux_error'].mask]
+results = results[~np.isnan(results['bp_rp'])]
+results = results[~results['bp_rp'].mask]
+results = results[~np.isnan(results['bp_g'])]
+results = results[~results['bp_g'].mask]
+results = results[~np.isnan(results['g_rp'])]
+results = results[~results['g_rp'].mask]
 
 # get useful data
 ra = np.array(results['ra'])
 dec = np.array(results['dec'])
-phot_g_mean_flux = np.array(results['phot_g_mean_flux'])
-phot_bp_mean_flux = np.array(results['phot_bp_mean_flux'])
-phot_rp_mean_flux = np.array(results['phot_rp_mean_flux'])
-phot_g_mean_flux_error = np.array(results['phot_g_mean_flux_error'])
-phot_bp_mean_flux_error = np.array(results['phot_bp_mean_flux_error'])
-phot_rp_mean_flux_error = np.array(results['phot_rp_mean_flux_error'])
 
 # Create a 2D scatter plot using Plotly
 fig = go.Figure(data=[go.Scattergl(
