@@ -75,9 +75,9 @@ for i in range(screen_parts):
         start_y = bins_y[j]
         end_y = bins_y[j+1]
 
-        histogram_g = np.zeros(histogram_parts+1)
-        histogram_bp = np.zeros(histogram_parts+1)
-        histogram_rp = np.zeros(histogram_parts+1)
+        histogram_g = np.zeros(histogram_parts+1, dtype=float)
+        histogram_bp = np.zeros(histogram_parts+1, dtype=float)
+        histogram_rp = np.zeros(histogram_parts+1, dtype=float)
         section_size = (max_ra - min_ra) / screen_parts / histogram_parts
         for result in table:
             bp_rp = result['bp_rp']
@@ -202,17 +202,13 @@ fig.show()
 # it doesnt has any special stuff and only noise stars
 if screen_parts == 3 and histogram_parts == 1000:
     area = ((max_ra - min_ra)/screen_parts * (max_dec - min_dec)/screen_parts)
-    noise_histogram_bp_rp = np.array(noise_histogram_bp_rp) / area
-    noise_histogram_bp_g = np.array(noise_histogram_bp_g) / area
-    noise_histogram_g_rp = np.array(noise_histogram_g_rp) / area
     np.save('noise_histograms/noise_histogram_bp_rp_right_down.npy', noise_histogram_bp_rp)
     np.save('noise_histograms/noise_histogram_bp_g_right_down.npy', noise_histogram_bp_g)
     np.save('noise_histograms/noise_histogram_g_rp_right_down.npy', noise_histogram_g_rp)
+    np.save('noise_histograms/noise_area_right_down.npy', area)
 if screen_parts == 4 and histogram_parts == 1000:
     area = ((max_ra - min_ra)/screen_parts * (max_dec - min_dec)/screen_parts)
-    noise_histogram_bp_rp = np.array(noise_histogram_bp_rp) / area
-    noise_histogram_bp_g = np.array(noise_histogram_bp_g) / area
-    noise_histogram_g_rp = np.array(noise_histogram_g_rp) / area
     np.save('noise_histograms/noise_histogram_bp_rp_left_up.npy', noise_histogram_bp_rp)
     np.save('noise_histograms/noise_histogram_bp_g_left_up.npy', noise_histogram_bp_g)
     np.save('noise_histograms/noise_histogram_g_rp_left_up.npy', noise_histogram_g_rp)
+    np.save('noise_histograms/noise_area_left_up.npy', area)

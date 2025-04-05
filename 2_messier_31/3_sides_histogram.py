@@ -4,6 +4,8 @@ import math
 from astropy.io import fits
 from astropy.table import Table
 from astropy.table import vstack
+from scipy.ndimage import gaussian_filter1d
+from scipy.ndimage import gaussian_filter
 
 # import csv results
 results = Table.read('andromeda_rotated.csv', format='csv')
@@ -12,7 +14,7 @@ results = Table.read('andromeda_rotated.csv', format='csv')
 threshhold = 0.1
 screen_parts = 20
 histogram_parts = 1000
-interesting_part = 3 # which part from left to compare with with its mirror part on right indexes are 0-19
+interesting_part = 5 # which part from left to compare with with its mirror part on right indexes are 0-19
 
 min_dec = np.min(results['dec'])
 max_dec = np.max(results['dec'])
@@ -50,9 +52,9 @@ for i in range(screen_parts):
     start_x = bins_x[i]
     end_x = bins_x[i+1]
 
-    histogram_bp_rp = np.zeros(histogram_parts+1, dtype=int)
-    histogram_bp_g = np.zeros(histogram_parts+1, dtype=int)
-    histogram_g_rp = np.zeros(histogram_parts+1, dtype=int)
+    histogram_bp_rp = np.zeros(histogram_parts+1, dtype=float)
+    histogram_bp_g = np.zeros(histogram_parts+1, dtype=float)
+    histogram_g_rp = np.zeros(histogram_parts+1, dtype=float)
     for result in table:
         bp_rp = result['bp_rp']
         bp_rp_ratio = (bp_rp - min_bp_rp) / (max_bp_rp - min_bp_rp)
@@ -74,85 +76,72 @@ for i in range(screen_parts):
     histograms_g_rp.append(histogram_g_rp)
 
 
-# remove the noise
+# load noise data
 noise_histogram_bp_rp_left_up = np.load('noise_histograms/noise_histogram_bp_rp_left_up.npy')
 noise_histogram_bp_g_left_up = np.load('noise_histograms/noise_histogram_bp_g_left_up.npy')
 noise_histogram_g_rp_left_up = np.load('noise_histograms/noise_histogram_g_rp_left_up.npy')
-
-# noise per area
-area = (max_ra - min_ra)/screen_parts * (threshhold*2)
-noise_histogram_bp_rp = noise_histogram_bp_rp_left_up * area
-noise_histogram_bp_g = noise_histogram_bp_g_left_up * area
-noise_histogram_g_rp = noise_histogram_g_rp_left_up * area
-
-for i in range(screen_parts):
-    histograms_bp_rp[i] = histograms_bp_rp[i] - noise_histogram_bp_rp
-    histograms_bp_g[i] = histograms_bp_g[i] - noise_histogram_bp_g
-    histograms_g_rp[i] = histograms_g_rp[i] - noise_histogram_g_rp
-
-# straight the amount of stars, to get avg colors per 1 star
-for i in range(screen_parts):
-    histograms_bp_rp[i] = histograms_bp_rp[i] / np.sum(histograms_bp_rp[i])
-    histograms_bp_g[i] = histograms_bp_g[i] / np.sum(histograms_bp_g[i])
-    histograms_g_rp[i] = histograms_g_rp[i] / np.sum(histograms_g_rp[i])
+noise_area_left_up = np.load('noise_histograms/noise_area_left_up.npy')
 
 
 # seperate histograms into left, avg, right
 hist_parts = math.floor(screen_parts/2)
-left_hist_bp_rp = histograms_bp_rp[:hist_parts]
-right_hist_bp_rp = histograms_bp_rp[hist_parts:]
-avg_hist_bp_rp = [(h1 + h2) / 2 for h1, h2 in zip(left_hist_bp_rp, right_hist_bp_rp)]
+noise_area = noise_area_left_up
+bp_rp = {
+    "left_hists": histograms_bp_rp[:hist_parts],
+    "right_hists": histograms_bp_rp[hist_parts:],
+    "noise_hist": noise_histogram_bp_rp_left_up
+}
+bp_rp["avg_hists"] = [(h1 + h2) / 2 for h1, h2 in zip(bp_rp["left_hists"], bp_rp["right_hists"])]
 
-left_hist_bp_g = histograms_bp_g[:hist_parts]
-right_hist_bp_g = histograms_bp_g[hist_parts:]
-avg_hist_bp_g = [(h1 + h2) / 2 for h1, h2 in zip(left_hist_bp_g, right_hist_bp_g)]
+bp_g = {
+    "left_hists": histograms_bp_g[:hist_parts],
+    "right_hists": histograms_bp_g[hist_parts:],
+    "noise_hist": noise_histogram_bp_g_left_up
+}
+bp_g["avg_hists"] = [(h1 + h2) / 2 for h1, h2 in zip(bp_g["left_hists"], bp_g["right_hists"])]
 
-left_hist_g_rp = histograms_g_rp[:hist_parts]
-right_hist_g_rp = histograms_g_rp[hist_parts:]
-avg_hist_g_rp = [(h1 + h2) / 2 for h1, h2 in zip(left_hist_g_rp, right_hist_g_rp)]
+g_rp = {
+    "left_hists": histograms_g_rp[:hist_parts],
+    "right_hists": histograms_g_rp[hist_parts:],
+    "noise_hist": noise_histogram_g_rp_left_up
+}
+g_rp["avg_hists"] = [(h1 + h2) / 2 for h1, h2 in zip(g_rp["left_hists"], g_rp["right_hists"])]
 
-# smooth each histogram
+
+# smooth histograms
 def smooth_histogram(hist):
-    # take point befor and point after, not avg but also check the speeds in range..
-    # dont forget that when i modify value the next itteration will use it as anchor
-    print()
+    hist[:] = gaussian_filter1d(hist, sigma=10)
 
-for hist in left_hist_bp_rp:
-    smooth_histogram(hist)
-for hist in right_hist_bp_rp:
-    smooth_histogram(hist)
-for hist in avg_hist_bp_rp:
-    smooth_histogram(hist)
 
-for hist in left_hist_bp_g:
-    smooth_histogram(hist)
-for hist in right_hist_bp_g:
-    smooth_histogram(hist)
-for hist in avg_hist_bp_g:
-    smooth_histogram(hist)
-
-for hist in left_hist_g_rp:
-    smooth_histogram(hist)
-for hist in right_hist_g_rp:
-    smooth_histogram(hist)
-for hist in avg_hist_g_rp:
-    smooth_histogram(hist)
+for color_shade in [bp_rp, bp_g, g_rp]:
+    smooth_histogram(color_shade["noise_hist"])
 
 # smooth between the histograms
 def smooth_between(hists):
-    print()
+    hists[:] = gaussian_filter(hists, sigma=(1.5, 10))
+    # hists[:] = gaussian_filter(hists, sigma=(0, 10))
 
-smooth_between(left_hist_bp_rp)
-smooth_between(right_hist_bp_rp)
-smooth_between(avg_hist_bp_rp)
+for color_shade in [bp_rp, bp_g, g_rp]:
+    smooth_between(color_shade["left_hists"])
+    smooth_between(color_shade["right_hists"])
+    smooth_between(color_shade["avg_hists"])
 
-smooth_between(left_hist_bp_g)
-smooth_between(right_hist_bp_g)
-smooth_between(avg_hist_bp_g)
+# remove the noise
+new_area = (max_ra - min_ra)/screen_parts * (threshhold*2)
+area_ratio = new_area / noise_area
 
-smooth_between(left_hist_g_rp)
-smooth_between(right_hist_g_rp)
-smooth_between(avg_hist_g_rp)
+# TODO get this back?
+# for color_shade in [bp_rp, bp_g, g_rp]:
+#     color_shade["left_hists"]  = color_shade["left_hists"]  - color_shade["noise_hist"] * area_ratio
+#     color_shade["right_hists"] = color_shade["right_hists"] - color_shade["noise_hist"] * area_ratio
+#     color_shade["avg_hists"]   = color_shade["avg_hists"]   - color_shade["noise_hist"] * area_ratio
+
+# # straight the amount of stars, to get avg colors per 1 star
+# for color_shade in [bp_rp, bp_g, g_rp]:
+#     for hists in [color_shade["left_hists"], color_shade["right_hists"], color_shade["avg_hists"]]:
+#         for i in range(len(hists)):
+#             hists[i] = hists[i] / np.sum(hists[i])
+
 
 
 
@@ -173,18 +162,17 @@ smooth_between(avg_hist_g_rp)
 # get useful data
 ra = np.array(original_results['ra'])
 dec = np.array(original_results['dec'])
-bp_rp = np.array(original_results['bp_rp'])
+colors = np.array(original_results['bp_rp'])
 
 # Create a 2D scatter plot using Plotly
 fig = go.Figure()
 
 fig.add_trace(go.Scattergl(
-    x=ra,
-    y=dec,
+    x=ra, y=dec,
     mode='markers',
     marker=dict(
         size=1,
-        color=bp_rp,
+        color=colors,
         colorscale='hot',
         opacity=1
     ),
@@ -249,69 +237,28 @@ fig.show()
 
 
 # plot the histograms
-# Convert histograms into x, y, z data
-bp_rp_x = []  # Histogram index
-bp_rp_y = []  # Bin index
-bp_rp_z = []  # Bin values (heights)
-bp_g_x = []
-bp_g_y = []
-bp_g_z = []
-g_rp_x = []
-g_rp_y = []
-g_rp_z = []
-
-for hist_index, hist in enumerate(left_hist_bp_rp):
-    for bin_index, count in enumerate(hist):
-        bp_rp_x.append(hist_index)  # Histogram number
-        bp_rp_y.append(bin_index)   # Bin index in histogram
-        bp_rp_z.append(count)       # Bin value (height)
-for hist_index, hist in enumerate(left_hist_bp_g):
-    for bin_index, count in enumerate(hist):
-        bp_g_x.append(hist_index)
-        bp_g_y.append(bin_index)
-        bp_g_z.append(count)
-for hist_index, hist in enumerate(left_hist_g_rp):
-    for bin_index, count in enumerate(hist):
-        g_rp_x.append(hist_index)
-        g_rp_y.append(bin_index)
-        g_rp_z.append(count)
-
-# Create a 3D scatter plot using Plotly
 fig = go.Figure()
 
-fig.add_trace(go.Scatter3d(
-    x=bp_rp_x,
-    y=bp_rp_y,
-    z=bp_rp_z,
-    mode='markers',
-    marker=dict(
-        size=1,
-        color='green',
-        opacity=0.6
-    ),
-))
-fig.add_trace(go.Scatter3d(
-    x=bp_g_x,
-    y=bp_g_y,
-    z=bp_g_z,
-    mode='markers',
-    marker=dict(
-        size=1,
-        color='lightblue',
-        opacity=0.6
-    ),
-))
-fig.add_trace(go.Scatter3d(
-    x=g_rp_x,
-    y=g_rp_y,
-    z=g_rp_z,
-    mode='markers',
-    marker=dict(
-        size=1,
-        color='red',
-        opacity=0.6
-    ),
-))
+for color_shade, color in zip([bp_rp, bp_g, g_rp], ["green", "lightblue", "red"]):
+    # Convert histograms into x, y, z data
+    x = [] # Histogram index
+    y = [] # Bin index
+    z = [] # Bin values (heights)
+    for hist_index, hist in enumerate(color_shade["left_hists"]):
+        for bin_index, count in enumerate(hist):
+            x.append(hist_index)  # Histogram number
+            y.append(bin_index)   # Bin index in histogram
+            z.append(count)       # Bin value (height)
+
+    fig.add_trace(go.Scatter3d(
+        x=x, y=y, z=z,
+        mode='markers',
+        marker=dict(
+            size=1,
+            color=color,
+            opacity=0.6
+        ),
+    ))
 
 # Labels and title
 fig.update_layout(
@@ -369,85 +316,32 @@ fig.show()
 
 
 # get interesting parts
-
-# Create a 2D scatter plot using Plotly
 fig = go.Figure()
 
-left_hist = left_hist_bp_rp[interesting_part]
-right_hist = right_hist_bp_rp[interesting_part]
-avg_hist = avg_hist_bp_rp[interesting_part]
-left_hist = left_hist - avg_hist
-right_hist = right_hist - avg_hist
-bins = np.arange(len(left_hist))
+for color_shade, name, color in zip([bp_rp, bp_g, g_rp], ["bp_rp", "bp_g", "g_rp"], ["green", "lightblue", "red"]):
+    left_hist = color_shade["left_hists"][interesting_part]
+    right_hist = color_shade["right_hists"][interesting_part]
+    avg_hist = color_shade["avg_hists"][interesting_part]
+    # TODO check this minus
+    # left_hist = left_hist - avg_hist
+    # right_hist = right_hist - avg_hist
+    bins = np.arange(len(left_hist))
 
-print('speed by bp_rp: ', sum(val * i for i, val in enumerate(right_hist)) / 6.499625227109498)
+    print('speed',name,':', sum(val * i for i, val in enumerate(right_hist)) / 6.499625227109498)
 
-fig.add_trace(go.Scattergl(
-    x=bins,
-    y=left_hist,
-    mode='lines+markers',
-    marker=dict(size=1, color='green'),
-    name="bp_rp left"
-))
+    fig.add_trace(go.Scattergl(
+        x=bins, y=left_hist,
+        mode='lines+markers',
+        marker=dict(size=1, color=color),
+        name=name+" left"
+    ))
 
-fig.add_trace(go.Scattergl(
-    x=bins,
-    y=right_hist,
-    mode='lines+markers',
-    marker=dict(size=1, color='lightgreen'),
-    name="bp_rp right"
-))
-
-left_hist = left_hist_bp_g[interesting_part]
-right_hist = right_hist_bp_g[interesting_part]
-avg_hist = avg_hist_bp_g[interesting_part]
-left_hist = left_hist - avg_hist
-right_hist = right_hist - avg_hist
-bins = np.arange(len(left_hist))
-
-print('speed by bp_g: ', sum(val * i for i, val in enumerate(right_hist)) / 2.3683722618236382)
-
-fig.add_trace(go.Scattergl(
-    x=bins,
-    y=left_hist,
-    mode='lines+markers',
-    marker=dict(size=1, color='blue'),
-    name="bp_g left"
-))
-
-fig.add_trace(go.Scattergl(
-    x=bins,
-    y=right_hist,
-    mode='lines+markers',
-    marker=dict(size=1, color='lightblue'),
-    name="bp_g right"
-))
-
-left_hist = left_hist_g_rp[interesting_part]
-right_hist = right_hist_g_rp[interesting_part]
-avg_hist = avg_hist_g_rp[interesting_part]
-left_hist = left_hist - avg_hist
-right_hist = right_hist - avg_hist
-bins = np.arange(len(left_hist))
-
-print('speed by g_rp: ', sum(val * i for i, val in enumerate(right_hist)) / 4.13610394421988)
-
-fig.add_trace(go.Scattergl(
-    x=bins,
-    y=left_hist,
-    mode='lines+markers',
-    marker=dict(size=1, color='red'),
-    name="g_rp left"
-))
-
-fig.add_trace(go.Scattergl(
-    x=bins,
-    y=right_hist,
-    mode='lines+markers',
-    marker=dict(size=1, color='pink'),
-    name="g_rp right"
-))
-
+    fig.add_trace(go.Scattergl(
+        x=bins, y=right_hist,
+        mode='lines+markers',
+        marker=dict(size=1, color=color),
+        name=name+" right"
+    ))
 
 # Labels and title
 fig.update_layout(
