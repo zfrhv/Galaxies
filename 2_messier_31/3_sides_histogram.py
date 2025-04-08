@@ -14,7 +14,7 @@ results = Table.read('andromeda_rotated.csv', format='csv')
 threshhold = 0.1
 screen_parts = 20
 histogram_parts = 1000
-interesting_part = 5 # which part from left to compare with with its mirror part on right indexes are 0-19
+interesting_part = 4 # which part from left to compare with with its mirror part on right indexes are 0-19
 
 min_dec = np.min(results['dec'])
 max_dec = np.max(results['dec'])
@@ -91,21 +91,18 @@ bp_rp = {
     "right_hists": histograms_bp_rp[hist_parts:],
     "noise_hist": noise_histogram_bp_rp_left_up
 }
-bp_rp["avg_hists"] = [(h1 + h2) / 2 for h1, h2 in zip(bp_rp["left_hists"], bp_rp["right_hists"])]
 
 bp_g = {
     "left_hists": histograms_bp_g[:hist_parts],
     "right_hists": histograms_bp_g[hist_parts:],
     "noise_hist": noise_histogram_bp_g_left_up
 }
-bp_g["avg_hists"] = [(h1 + h2) / 2 for h1, h2 in zip(bp_g["left_hists"], bp_g["right_hists"])]
 
 g_rp = {
     "left_hists": histograms_g_rp[:hist_parts],
     "right_hists": histograms_g_rp[hist_parts:],
     "noise_hist": noise_histogram_g_rp_left_up
 }
-g_rp["avg_hists"] = [(h1 + h2) / 2 for h1, h2 in zip(g_rp["left_hists"], g_rp["right_hists"])]
 
 
 # smooth histograms
@@ -118,13 +115,18 @@ for color_shade in [bp_rp, bp_g, g_rp]:
 
 # smooth between the histograms
 def smooth_between(hists):
+    # TODO maybe i should keep both sigmas the same? so he wont have priority to shift the color than smooth the graph
     hists[:] = gaussian_filter(hists, sigma=(1.5, 10))
-    # hists[:] = gaussian_filter(hists, sigma=(0, 10))
 
 for color_shade in [bp_rp, bp_g, g_rp]:
     smooth_between(color_shade["left_hists"])
     smooth_between(color_shade["right_hists"])
-    smooth_between(color_shade["avg_hists"])
+
+# normaliza + count avg
+for color_shade in [bp_rp, bp_g, g_rp]:
+    color_shade["n_left_hists"] = color_shade["left_hists"] / np.sum(color_shade["left_hists"])
+    color_shade["n_right_hists"] = color_shade["right_hists"] / np.sum(color_shade["right_hists"])
+    color_shade["n_avg_hists"] = [(h1 + h2) / 2 for h1, h2 in zip(color_shade["n_left_hists"], color_shade["n_right_hists"])]
 
 # remove the noise
 new_area = (max_ra - min_ra)/screen_parts * (threshhold*2)
@@ -319,28 +321,31 @@ fig.show()
 fig = go.Figure()
 
 for color_shade, name, color in zip([bp_rp, bp_g, g_rp], ["bp_rp", "bp_g", "g_rp"], ["green", "lightblue", "red"]):
-    left_hist = color_shade["left_hists"][interesting_part]
-    right_hist = color_shade["right_hists"][interesting_part]
-    avg_hist = color_shade["avg_hists"][interesting_part]
-    # TODO check this minus
-    # left_hist = left_hist - avg_hist
-    # right_hist = right_hist - avg_hist
+    left_hist = color_shade["n_left_hists"][interesting_part]
+    right_hist = color_shade["n_right_hists"][interesting_part]
+    avg_hist = color_shade["n_avg_hists"][interesting_part]
+    left_hist = left_hist - avg_hist
+    right_hist = right_hist - avg_hist
     bins = np.arange(len(left_hist))
 
-    print('speed',name,':', sum(val * i for i, val in enumerate(right_hist)) / 6.499625227109498)
+    # TODO
+    # idk its too complicated, idk what to normalize or smooth, idk how to calc the speed.
+
+    avg_brightness = sum(val * i for i, val in enumerate(left_hist))/sum(left_hist)
+    print('speed',name,':', avg_brightness / 478.58)
 
     fig.add_trace(go.Scattergl(
         x=bins, y=left_hist,
         mode='lines+markers',
         marker=dict(size=1, color=color),
-        name=name+" left"
+        name=name+" left speed"
     ))
 
     fig.add_trace(go.Scattergl(
         x=bins, y=right_hist,
         mode='lines+markers',
         marker=dict(size=1, color=color),
-        name=name+" right"
+        name=name+" right speed"
     ))
 
 # Labels and title
@@ -367,6 +372,4 @@ fig.show()
 
 
 # TODO
-# make smooth_histogram() and smooth all histograms
-# smooth between the left histograms same for avg and right
 # do left-avg vs right-avg and see the speeds
